@@ -1,0 +1,92 @@
+[
+ {
+  "start": 2.1364481449127197,
+  "end": 11.230183124542236,
+  "out": {
+   "reply": "Your application has been found eligible for the Need-Based Financial Aid Scholarship. Your reason describes a specific financial difficulty that affects your ability to pay tuition, which matches the scholarship policy.",
+   "decisions": [
+    {
+     "pattern": "#policy",
+     "action": "eligible",
+     "eligibility": "eligible",
+     "confidence": 0.74,
+     "genuine": 0.815,
+     "financial_need": 0.865,
+     "probabilities": {
+      "eligible": 0.74,
+      "needs_review": 0.131,
+      "ineligible": 0.129
+     },
+     "decider_ms": 5106
+    }
+   ],
+   "model_id": "us.amazon.nova-pro-v1:0",
+   "latency_ms": 5106,
+   "agent": "ScholarMatch",
+   "eager": false,
+   "served_by": "Amazon Bedrock AgentCore Runtime"
+  },
+  "say": "Please review application STU-101.",
+  "narrate": "A specific, genuine financial hardship \u2014 a parent's job loss."
+ },
+ {
+  "start": 11.230188131332397,
+  "end": 20.416281700134277,
+  "out": {
+   "reply": "Your application has been held for human review. The reason provided could not be assessed with sufficient confidence \u2014 it may be too vague, borderline, or ambiguous for an automatic decision. A reviewer will assess it.",
+   "decisions": [
+    {
+     "pattern": "#policy",
+     "action": "needs_review",
+     "eligibility": "needs_review",
+     "confidence": 0.429,
+     "genuine": 0.297,
+     "financial_need": 0.722,
+     "probabilities": {
+      "eligible": 0.354,
+      "needs_review": 0.217,
+      "ineligible": 0.429
+     },
+     "decider_ms": 5527
+    }
+   ],
+   "model_id": "us.amazon.nova-pro-v1:0",
+   "latency_ms": 5527,
+   "agent": "ScholarMatch",
+   "eager": false,
+   "served_by": "Amazon Bedrock AgentCore Runtime"
+  },
+  "say": "Please review application STU-104.",
+  "narrate": "A vague reason with no real detail \u2014 too short to judge."
+ },
+ {
+  "start": 20.4162859916687,
+  "end": 28.900794744491577,
+  "out": {
+   "reply": "Your application has been found ineligible for the Need-Based Financial Aid Scholarship. The reason provided does not demonstrate a genuine financial hardship affecting tuition payment, as required by the scholarship policy.",
+   "decisions": [
+    {
+     "pattern": "#policy",
+     "action": "ineligible",
+     "eligibility": "ineligible",
+     "confidence": 0.68,
+     "genuine": 0.677,
+     "financial_need": 0.239,
+     "probabilities": {
+      "eligible": 0.099,
+      "needs_review": 0.221,
+      "ineligible": 0.68
+     },
+     "decider_ms": 4950
+    }
+   ],
+   "model_id": "us.amazon.nova-pro-v1:0",
+   "latency_ms": 4950,
+   "agent": "ScholarMatch",
+   "eager": false,
+   "served_by": "Amazon Bedrock AgentCore Runtime"
+  },
+  "say": "Please review application STU-107.",
+  "narrate": "A merit reason that does not match the financial-need policy."
+ }
+]

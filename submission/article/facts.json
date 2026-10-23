@@ -1,0 +1,110 @@
+{
+ "pattern_tag": "#policy",
+ "agentcore_features": [],
+ "pattern_doc": "REUSABLE DECISION PATTERN: scholarship policy classification  (#policy)\n\nScholarMatch reads a student's scholarship application reason and decides whether it matches the\nNeed-Based Financial Aid Scholarship policy, returning eligible / needs_review / ineligible.\n\nWhat it does\n    For each application, Strands Decider 2B reads the student's free-text reason against a written\n    scholarship policy and classifies it as eligible, needs_review, or ineligible. Two supporting\n    questions check whether the reason is specific/genuine and whether it describes a real financial\n    hardship. Low confidence, a vague reason, or absence of financial hardship always escalates to\n    needs_review (a human), so the agent never confirms eligibility for a non-financial reason.\n\nTyped questions and options\n    eligibility (choice): eligible / needs_review / ineligible, each with a one-line definition.\n    genuine (noul): is the reason specific and genuine, rather than vague, generic, or templated?\n    financial_need (noul): does the reason describe a real financial hardship affecting tuition?\n    See QUESTIONS below.\n\nWiring\n    ScholarshipPolicyCheck.check(reason) builds a state from the reason, calls\n    Decider.ask(state, QUESTIONS), and maps the answers to an action in decide(). It runs in\n    agent.py before the reply is written (the \"before the agent runs\" form of the #policy pattern):\n    the Strands Agent only explains the verdict the decider already reached; it never re-decides.\n\nHow to reuse it\n    Copy this file, replace POLICY and SCHOLARSHIP with your own policy prose and name, and reword\n    the three questions for your domain. The thresholds that turn probabilities into an action live\n    in decide() (sure=0.6, genuine_floor=0.4, genuine_eligible=0.6, financial_floor=0.5): change\n    them there, in code you own.\n\n    genuine_eligible > genuine_floor is intentional: failing genuine_floor sends a case to\n    needs_review (human review), while genuine_eligible is an additional gate on the eligible path\n    so that vague or generic reasons cannot reach eligible even if confidence and financial_need\n    scores are high.\n\n    Rule precedence (in decide()):\n    Rule 0  \u2014 academic merit text, no financial text \u2192 ineligible (policy disqualifier, runs first)\n    Rule 1  \u2014 low confidence or genuine < floor \u2192 needs_review\n    Rule 2  \u2014 eligible label, prob_ineligible \u2265 0.30 \u2192 needs_review\n    Rule 3  \u2014 eligible label, genuine < genuine_eligible \u2192 needs_review\n    Rule 3a \u2014 eligible label, academic merit text, no financial text \u2192 ineligible (belt-and-suspenders)\n    Rule 3b \u2014 eligible label, no signals at all but financial_need high \u2192 needs_review\n    Rule 4  \u2014 eligible label, financial_p < floor \u2192 ineligible\n    Rule 5  \u2014 eligible label, all gates pass \u2192 eligible\n    Rule 6  \u2014 ineligible label \u2192 ineligible\n    Rule 7  \u2014 needs_review or unknown \u2192 needs_review",
+ "questions_code": "QUESTIONS = {\n    \"eligibility\": Decider.choice(\n        f\"Does the applicant's reason match the {SCHOLARSHIP} policy?\\nPolicy: {POLICY}\",\n        {\n            \"eligible\": \"a specific, genuine financial difficulty that clearly affects the \"\n                        \"applicant's ability to pay tuition or continue studying, matching the policy\",\n            \"needs_review\": \"the reason is borderline, too vague, or too short to judge with \"\n                            \"confidence; hold it for a human reviewer\",\n            \"ineligible\": \"the reason describes academic merit, ambition, a generic wish for \"\n                          \"money, or otherwise does not match the financial-need policy\",\n        },\n    ),\n    \"genuine\": Decider.noul(\n        \"Is the applicant's reason specific and genuine, rather than vague, generic, or templated?\",\n        {\"true\": \"it names a concrete situation with real, specific detail\",\n         \"false\": \"it is generic, templated, or lacks concrete detail\"},\n    ),\n    \"financial_need\": Decider.noul(\n        \"Does the applicant's reason describe a real financial hardship that affects their ability \"\n        \"to pay tuition or continue studying?\",\n        {\"true\": \"it describes loss of income, unpaid bills, a family emergency, or another \"\n                 \"concrete financial difficulty that prevents the applicant from paying tuition\",\n         \"false\": \"it describes academic achievement, ambition, a preference, a purchase, \"\n                  \"or any reason other than a financial difficulty that affects tuition payment\"},\n    ),\n}",
+ "agent_md": "# Use case\n\n- **Pitch:** a scholarship reviewer that reads a student's application reason and decides whether\n  it matches the scholarship policy, returning eligible / needs_review / ineligible with a short\n  explanation.\n- **Who it is for:** a university scholarship office, so staff are not reading every application by\n  hand; unsure cases still go to a human.\n- **Features:**\n  - reads a student's free-text application reason against the Need-Based Financial Aid Scholarship\n    policy;\n  - classifies `eligible` / `needs_review` / `ineligible` with calibrated confidence;\n  - low-confidence or vague reasons are held for a human, never auto-approved;\n  - a short, plain explanation that references the policy clause;\n  - look up an application by student id from sample data.\n- **The decision handed to Strands Decider 2B:** does the applicant's reason match the scholarship\n  policy? (`#policy`)\n- **Why a decision model:** the check is a language judgement (does this written reason satisfy a\n  policy written in prose), it must return a confidence the code can branch on, and it runs on\n  every application.\n- **Local only:** this build runs locally (`.\\kit.cmd run` / `.\\kit.cmd demo`); it is not deployed.\n- **Built with the AWS User Group Madurai Strands Decider hackathon kit.**\n",
+ "llm_provider_local_runs": "ugmdu",
+ "agent_name": "ScholarMatch",
+ "bench": {
+  "summary": {
+   "decider": {
+    "accuracy": 0.7308,
+    "decisions": 26,
+    "per_question": {
+     "eligibility": 0.6154,
+     "genuine": 0.8462
+    },
+    "latency_p50_ms": 4019.0,
+    "latency_p95_ms": 4955.5,
+    "usd_per_1k_decisions": 0.035,
+    "confident_share": 0.2692,
+    "accuracy_when_confident": 1.0,
+    "sent_to_human_at_threshold": 19
+   },
+   "llm": {
+    "accuracy": 0.6538,
+    "decisions": 26,
+    "per_question": {
+     "eligibility": 0.5385,
+     "genuine": 0.7692
+    },
+    "latency_p50_ms": 17781.0,
+    "latency_p95_ms": 19312.3,
+    "usd_per_1k_decisions": 0.0,
+    "confident_share": 1.0,
+    "accuracy_when_confident": 0.6538,
+    "sent_to_human_at_threshold": 0
+   },
+   "speedup_p50": 4.42
+  },
+  "decider_model": "strands-decider-2b-hobson-v19",
+  "decider_mode": "ugmdu",
+  "llm_model": "qwen3.5-4b",
+  "cases": 13,
+  "split": "test",
+  "threshold": 0.7
+ },
+ "bench_table": "Decider: strands-decider-2b-hobson-v19 (ugmdu). 13 labelled cases, 26 decisions.\n\n| | Strands Decider 2B | qwen3.5-4b |\n|---|---|---|\n| Accuracy | 73.1% | 65.4% |\n| Latency p50 per decision | 4019 ms | 17781 ms |\n| Latency p95 | 4956 ms | 19312 ms |\n| Cost per 1,000 decisions | $0.0350 | $0.0000 |\n| Answered alone at confidence >= 0.7 | 27% | 100% |\n| Accuracy when confident | 100.0% | 65.4% |\n\nAt the median the decider was 4.4x faster than the LLM.\n",
+ "demo_turns": [
+  {
+   "user": "My headphones are broken, I want my money back.",
+   "reply": "Please provide the order ID for the headphones so I can process your refund.",
+   "decisions": [
+    {
+     "pattern": "#guardrails",
+     "tool": "refund_order",
+     "args": {
+      "amount": 249.0,
+      "order_id": "A1002"
+     },
+     "args_grounded": 0.437,
+     "explicit_request": 0.791,
+     "premature": 0.235,
+     "decider_ms": 3075,
+     "verdict": "guide"
+    }
+   ],
+   "latency_ms": 6970
+  },
+  {
+   "user": "It's order A1002, refund the full amount please.",
+   "reply": "Your refund for order A1002 has been processed. You will receive 249.0 back to your original payment method. If you have any further questions, feel free to ask.",
+   "decisions": [
+    {
+     "pattern": "#guardrails",
+     "tool": "refund_order",
+     "args": {
+      "amount": 249,
+      "order_id": "A1002"
+     },
+     "args_grounded": 0.608,
+     "explicit_request": 0.894,
+     "premature": 0.128,
+     "decider_ms": 3894,
+     "verdict": "proceed"
+    }
+   ],
+   "latency_ms": 5813
+  },
+  {
+   "user": "Is it possible to cancel an order after it ships?",
+   "reply": "Once an order has shipped, it cannot be cancelled. However, you can still request a refund after receiving the item. If you have any further questions, feel free to ask.",
+   "decisions": [],
+   "latency_ms": 940
+  }
+ ],
+ "deployment": {
+  "runtime_arn": "arn:aws:bedrock-agentcore:us-east-1:649170435024:runtime/deciderkit_agent-zEg1rP5rKF",
+  "region": "us-east-1",
+  "deployed_at": 1792762573.6087947,
+  "deploy_seconds": 142,
+  "decider_mode": "ugmdu",
+  "bedrock_model": "us.amazon.nova-pro-v1:0",
+  "eager": false,
+  "memories": {},
+  "gateways": {}
+ },
+ "repo_url": "",
+ "video_url": ""
+}
